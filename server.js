@@ -1,60 +1,24 @@
 const express = require("express");
 
 const app = express();
-
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({
-    status: "Mony Backend OK"
-  });
+  res.json({ status: "Mony Backend OK" });
 });
 
 app.get("/health", (req, res) => {
-  res.json({
-    status: "ok"
-  });
+  res.json({ status: "ok" });
 });
 
 app.post("/recharge", async (req, res) => {
 
-  const {
-    phone,
-    operator,
-    amount,
-    offer
-  } = req.body;
+  const { phone, operator, offer } = req.body;
 
-  if (!phone || !operator || !amount || !offer) {
+  if (!phone || !operator || !offer) {
     return res.status(400).json({
       status: "error",
       message: "Missing recharge data"
-    });
-  }
-
-  const op = operator.toLowerCase();
-
-  // 20 points = 50 DZD
-  const money = 50;
-
-  if (!["mobilis", "djezzy", "ooredoo"].includes(op)) {
-    return res.status(400).json({
-      status: "error",
-      message: "Invalid operator"
-    });
-  }
-
-  if (!Number.isFinite(money) || money <= 0) {
-    return res.status(400).json({
-      status: "error",
-      message: "Invalid amount"
-    });
-  }
-
-  if (!["prepaid", "postpaid"].includes(offer)) {
-    return res.status(400).json({
-      status: "error",
-      message: "Invalid offer"
     });
   }
 
@@ -68,21 +32,18 @@ app.post("/recharge", async (req, res) => {
   }
 
   try {
-
     const response = await fetch(
       "https://sofizpay.com/services/operation_post",
       {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json"
         },
-
         body: JSON.stringify({
           encrypted_sk: secret,
           phone: phone,
-          operator: op,
-          amount: money,
+          operator: operator.toLowerCase(),
+          amount: 50,
           offer: offer
         })
       }
@@ -101,11 +62,12 @@ app.post("/recharge", async (req, res) => {
       };
     }
 
-    return res
-      .status(response.status)
-      .json(data);
+    console.log("SOFIZPAY RESPONSE:", data);
+
+    return res.status(response.status).json(data);
 
   } catch (error) {
+    console.log("SOFIZPAY ERROR:", error);
 
     return res.status(500).json({
       status: "error",
