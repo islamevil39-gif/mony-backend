@@ -33,7 +33,9 @@ app.post("/recharge", async (req, res) => {
   }
 
   const op = operator.toLowerCase();
-  const money = Number(amount);
+
+  // 20 points = 50 DZD
+  const money = 50;
 
   if (!["mobilis", "djezzy", "ooredoo"].includes(op)) {
     return res.status(400).json({
