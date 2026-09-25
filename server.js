@@ -1,21 +1,34 @@
 const express = require("express");
 
 const app = express();
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ status: "Mony Backend OK" });
+  res.json({
+    status: "Mony Backend OK"
+  });
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok"
+  });
 });
 
 app.post("/recharge", async (req, res) => {
 
-  const { phone, operator, offer } = req.body;
+  console.log("RECHARGE REQUEST:", req.body);
+
+  const {
+    phone,
+    operator,
+    offer
+  } = req.body;
 
   if (!phone || !operator || !offer) {
+    console.log("MISSING DATA");
+
     return res.status(400).json({
       status: "error",
       message: "Missing recharge data"
@@ -25,20 +38,28 @@ app.post("/recharge", async (req, res) => {
   const secret = process.env.SOFIZPAY_SECRET;
 
   if (!secret) {
+    console.log("SECRET NOT FOUND");
+
     return res.status(500).json({
       status: "error",
       message: "SOFIZPAY_SECRET is not configured"
     });
   }
 
+  console.log("SECRET FOUND");
+  console.log("SENDING TO SOFIZPAY");
+
   try {
+
     const response = await fetch(
       "https://sofizpay.com/services/operation_post",
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
           encrypted_sk: secret,
           phone: phone,
@@ -51,6 +72,9 @@ app.post("/recharge", async (req, res) => {
 
     const text = await response.text();
 
+    console.log("SOFIZPAY HTTP STATUS:", response.status);
+    console.log("SOFIZPAY RESPONSE:", text);
+
     let data;
 
     try {
@@ -62,12 +86,13 @@ app.post("/recharge", async (req, res) => {
       };
     }
 
-    console.log("SOFIZPAY RESPONSE:", data);
-
-    return res.status(response.status).json(data);
+    return res
+      .status(response.status)
+      .json(data);
 
   } catch (error) {
-    console.log("SOFIZPAY ERROR:", error);
+
+    console.log("SOFIZPAY ERROR:", error.message);
 
     return res.status(500).json({
       status: "error",
@@ -80,5 +105,5 @@ app.post("/recharge", async (req, res) => {
 const port = process.env.PORT || 10000;
 
 app.listen(port, "0.0.0.0", () => {
-  console.log("Mony Backend running");
+  console.log("Mony Backend running on port " + port);
 });
