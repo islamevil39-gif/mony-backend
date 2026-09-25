@@ -1,40 +1,29 @@
 const express = require("express");
 
 const app = express();
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ status: "Mony Backend OK" });
+  res.json({
+    status: "Mony Backend OK"
+  });
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok"
+  });
 });
 
-// اختبار آمن
-app.post("/recharge-test", (req, res) => {
-  const { phone, operator, amount, offer } = req.body;
+app.post("/recharge", async (req, res) => {
 
-  if (!phone || !operator || !amount || !offer) {
-    return res.status(400).json({
-      status: "error",
-      message: "Missing recharge data"
-    });
-  }
-
-  res.json({
-    status: "test_ok",
+  const {
     phone,
     operator,
     amount,
     offer
-  });
-});
-
-// شحن حقيقي عبر SofizPay
-app.post("/recharge", async (req, res) => {
-
-  const { phone, operator, amount, offer } = req.body;
+  } = req.body;
 
   if (!phone || !operator || !amount || !offer) {
     return res.status(400).json({
@@ -43,12 +32,14 @@ app.post("/recharge", async (req, res) => {
     });
   }
 
-  const secret = process.env.SOFIZPAY_SECRET;
+  const secret =
+    process.env.SOFIZPAY_SECRET;
 
   if (!secret) {
     return res.status(500).json({
       status: "error",
-      message: "SofizPay secret is not configured"
+      message:
+        "SOFIZPAY_SECRET is not configured"
     });
   }
 
@@ -58,34 +49,61 @@ app.post("/recharge", async (req, res) => {
       "https://sofizpay.com/services/operation_post",
       {
         method: "POST",
+
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type":
+            "application/json"
         },
+
         body: JSON.stringify({
           encrypted_sk: secret,
           phone: phone,
-          operator: operator.toLowerCase(),
+          operator:
+            operator.toLowerCase(),
           amount: Number(amount),
           offer: offer
         })
       }
     );
 
-    const data = await response.json();
+    const text =
+      await response.text();
 
-    res.status(response.status).json(data);
+    let data;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = {
+        status: "error",
+        message: text
+      };
+    }
+
+    res.status(
+      response.status
+    ).json(data);
 
   } catch (error) {
 
     res.status(500).json({
       status: "error",
-      message: "SofizPay connection failed"
+      message:
+        "SofizPay connection failed",
+      detail: error.message
     });
   }
 });
 
-const port = process.env.PORT || 10000;
+const port =
+  process.env.PORT || 10000;
 
-app.listen(port, "0.0.0.0", () => {
-  console.log("Mony Backend running");
-});
+app.listen(
+  port,
+  "0.0.0.0",
+  () => {
+    console.log(
+      "Mony Backend running"
+    );
+  }
+);
