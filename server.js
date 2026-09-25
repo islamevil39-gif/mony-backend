@@ -32,14 +32,36 @@ app.post("/recharge", async (req, res) => {
     });
   }
 
-  const secret =
-    process.env.SOFIZPAY_SECRET;
+  const op = operator.toLowerCase();
+  const money = Number(amount);
+
+  if (!["mobilis", "djezzy", "ooredoo"].includes(op)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid operator"
+    });
+  }
+
+  if (!Number.isFinite(money) || money <= 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid amount"
+    });
+  }
+
+  if (!["prepaid", "postpaid"].includes(offer)) {
+    return res.status(400).json({
+      status: "error",
+      message: "Invalid offer"
+    });
+  }
+
+  const secret = process.env.SOFIZPAY_SECRET;
 
   if (!secret) {
     return res.status(500).json({
       status: "error",
-      message:
-        "SOFIZPAY_SECRET is not configured"
+      message: "SOFIZPAY_SECRET is not configured"
     });
   }
 
@@ -51,23 +73,20 @@ app.post("/recharge", async (req, res) => {
         method: "POST",
 
         headers: {
-          "Content-Type":
-            "application/json"
+          "Content-Type": "application/json"
         },
 
         body: JSON.stringify({
           encrypted_sk: secret,
           phone: phone,
-          operator:
-            operator.toLowerCase(),
-          amount: Number(amount),
+          operator: op,
+          amount: money,
           offer: offer
         })
       }
     );
 
-    const text =
-      await response.text();
+    const text = await response.text();
 
     let data;
 
@@ -80,30 +99,22 @@ app.post("/recharge", async (req, res) => {
       };
     }
 
-    res.status(
-      response.status
-    ).json(data);
+    return res
+      .status(response.status)
+      .json(data);
 
   } catch (error) {
 
-    res.status(500).json({
+    return res.status(500).json({
       status: "error",
-      message:
-        "SofizPay connection failed",
+      message: "SofizPay connection failed",
       detail: error.message
     });
   }
 });
 
-const port =
-  process.env.PORT || 10000;
+const port = process.env.PORT || 10000;
 
-app.listen(
-  port,
-  "0.0.0.0",
-  () => {
-    console.log(
-      "Mony Backend running"
-    );
-  }
-);
+app.listen(port, "0.0.0.0", () => {
+  console.log("Mony Backend running");
+});
